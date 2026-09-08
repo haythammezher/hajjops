@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Plane, Plus, Download, Filter, CheckCircle2, Clock, X, Calendar, Users, Globe } from 'lucide-react';
+import { Plane, Plus, Download, Filter, CheckCircle2, Clock, X, Calendar, Users, Globe, AlertTriangle, RefreshCw, Send } from 'lucide-react';
 
 interface FlightSlot {
   id: string;
@@ -22,6 +22,7 @@ interface FlightSlot {
   permitNumber?: string;
   permitExpiry?: string;
   notes?: string;
+  rejectionReason?: string;
 }
 
 const GACA_AIRLINES = ['Saudi Airlines (SV)', 'Flynas (XY)', 'Flyadeal (F3)', 'Air Arabia (G9)'];
@@ -34,7 +35,7 @@ const mockSlots: FlightSlot[] = [
   { id: 'SLT-003', slotRef: 'LCAA-HJ27-0201', authority: 'LCAA', airline: 'Middle East Airlines (ME)', flightNumber: 'ME-201', origin: 'Beirut (BEY)', destination: 'Jeddah (JED)', date: '15/09/2027', time: '10:00', aircraft: 'Airbus A330-300 (335 seats)', totalSeats: 335, allocatedSeats: 112, slotType: 'Hajj Charter', status: 'approved', permitNumber: 'LCAA/HJ/2027/0201', permitExpiry: '22/10/2027', notes: 'Lebanese Hajj mission — LCAA slot' },
   { id: 'SLT-004', slotRef: 'LCAA-HJ27-0202', authority: 'LCAA', airline: 'Middle East Airlines (ME)', flightNumber: 'ME-202', origin: 'Beirut (BEY)', destination: 'Madinah (MED)', date: '16/09/2027', time: '07:45', aircraft: 'Airbus A320 (180 seats)', totalSeats: 180, allocatedSeats: 98, slotType: 'Extra Section', status: 'pending', notes: 'Awaiting LCAA final approval' },
   { id: 'SLT-005', slotRef: 'GACA-HJ27-0853', authority: 'GACA', airline: 'Saudi Airlines (SV)', flightNumber: 'PK-853', origin: 'Karachi (KHI)', destination: 'Jeddah (JED)', date: '17/09/2027', time: '03:45', aircraft: 'Boeing 737-800 (189 seats)', totalSeats: 189, allocatedSeats: 98, slotType: 'Scheduled', status: 'conditional', permitNumber: 'GACA/HJ/2027/0853', notes: 'Conditional — pending health clearance docs' },
-  { id: 'SLT-006', slotRef: 'LCAA-HJ27-0203', authority: 'LCAA', airline: 'Cedar Jet (LQ)', flightNumber: 'LQ-103', origin: 'Beirut (BEY)', destination: 'Jeddah (JED)', date: '18/09/2027', time: '22:30', aircraft: 'Airbus A320 (180 seats)', totalSeats: 180, allocatedSeats: 0, slotType: 'Hajj Charter', status: 'rejected', notes: 'Rejected — airline permit expired' },
+  { id: 'SLT-006', slotRef: 'LCAA-HJ27-0203', authority: 'LCAA', airline: 'Cedar Jet (LQ)', flightNumber: 'LQ-103', origin: 'Beirut (BEY)', destination: 'Jeddah (JED)', date: '18/09/2027', time: '22:30', aircraft: 'Airbus A320 (180 seats)', totalSeats: 180, allocatedSeats: 0, slotType: 'Hajj Charter', status: 'rejected', notes: 'Rejected — airline permit expired', rejectionReason: 'Airline operating permit has expired. A valid LCAA operating certificate must be submitted before a new slot approval can be granted.' },
 ];
 
 const statusColors: Record<string, string> = {
@@ -54,6 +55,9 @@ export default function FlightSlotsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [filterAuthority, setFilterAuthority] = useState<'all' | 'GACA' | 'LCAA'>('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [resubmitSlot, setResubmitSlot] = useState<FlightSlot | null>(null);
+  const [resubmitNote, setResubmitNote] = useState('');
+  const [resubmitSuccess, setResubmitSuccess] = useState<string | null>(null);
   const [form, setForm] = useState({
     authority: 'GACA\' as \'GACA\' | \'LCAA',
     airline: '',
@@ -109,6 +113,20 @@ export default function FlightSlotsPage() {
     setForm({ authority: 'GACA', airline: '', flightNumber: '', origin: '', destination: '', date: '', time: '', aircraft: '', slotType: 'Hajj Charter', totalSeats: '', permitNumber: '', notes: '' });
   };
 
+  const handleResubmit = () => {
+    if (!resubmitSlot) return;
+    setSlots((prev) =>
+      prev.map((s) =>
+        s.id === resubmitSlot.id
+          ? { ...s, status: 'pending', rejectionReason: undefined, notes: resubmitNote || s.notes }
+          : s
+      )
+    );
+    setResubmitSuccess(resubmitSlot.slotRef);
+    setResubmitSlot(null);
+    setResubmitNote('');
+  };
+
   const exportCSV = () => {
     const headers = ['Slot Ref', 'Authority', 'Airline', 'Flight #', 'Origin', 'Destination', 'Date', 'Time', 'Aircraft', 'Total Seats', 'Allocated', 'Type', 'Status', 'Permit #'];
     const rows = slots.map((s) => [s.slotRef, s.authority, s.airline, s.flightNumber, s.origin, s.destination, s.date, s.time, s.aircraft, s.totalSeats, s.allocatedSeats, s.slotType, s.status, s.permitNumber || '']);
@@ -145,6 +163,15 @@ export default function FlightSlotsPage() {
             </button>
           </div>
         </div>
+
+        {/* Resubmit Success Banner */}
+        {resubmitSuccess && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#F0FDF4] border border-[#16A34A]/30 text-[#16A34A]">
+            <CheckCircle2 size={16} className="flex-shrink-0" />
+            <p className="text-sm font-medium">New approval request submitted for slot <span className="font-mono">{resubmitSuccess}</span>. Status updated to <strong>Pending</strong>.</p>
+            <button onClick={() => setResubmitSuccess(null)} className="ml-auto p-1 rounded hover:bg-[#16A34A]/10"><X size={14} /></button>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -225,7 +252,7 @@ export default function FlightSlotsPage() {
             <table className="w-full text-sm min-w-[1000px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {['Slot Ref', 'Authority', 'Flight', 'Route', 'Date & Time', 'Aircraft', 'Seats', 'Type', 'Status', 'Permit #'].map((h) => (
+                  {['Slot Ref', 'Authority', 'Flight', 'Route', 'Date & Time', 'Aircraft', 'Seats', 'Type', 'Status', 'Permit #', ''].map((h) => (
                     <th key={h} className="text-left py-2.5 px-3 text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -233,45 +260,73 @@ export default function FlightSlotsPage() {
               <tbody>
                 {filtered.map((slot) => {
                   const fillPct = slot.totalSeats > 0 ? Math.round((slot.allocatedSeats / slot.totalSeats) * 100) : 0;
+                  const isRejected = slot.status === 'rejected';
                   return (
-                    <tr key={slot.id} className="table-row-hover border-b border-border/50 last:border-0">
-                      <td className="py-3 px-3">
-                        <span className="font-mono-data text-xs text-foreground">{slot.slotRef}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${authorityColors[slot.authority]}`}>{slot.authority}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <p className="font-semibold text-foreground text-sm">{slot.flightNumber}</p>
-                        <p className="text-xs text-muted-foreground">{slot.airline}</p>
-                      </td>
-                      <td className="py-3 px-3">
-                        <p className="text-sm text-foreground">{slot.origin}</p>
-                        <p className="text-xs text-muted-foreground">→ {slot.destination}</p>
-                      </td>
-                      <td className="py-3 px-3">
-                        <p className="text-sm text-foreground flex items-center gap-1"><Calendar size={11} className="text-muted-foreground" />{slot.date}</p>
-                        <p className="text-xs text-muted-foreground">{slot.time}</p>
-                      </td>
-                      <td className="py-3 px-3 text-xs text-muted-foreground max-w-[140px] truncate">{slot.aircraft}</td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${fillPct}%` }} />
+                    <React.Fragment key={slot.id}>
+                      <tr className={`table-row-hover border-b border-border/50 ${isRejected ? 'bg-[#FEF2F2]/30' : ''}`}>
+                        <td className="py-3 px-3">
+                          <span className="font-mono-data text-xs text-foreground">{slot.slotRef}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${authorityColors[slot.authority]}`}>{slot.authority}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <p className="font-semibold text-foreground text-sm">{slot.flightNumber}</p>
+                          <p className="text-xs text-muted-foreground">{slot.airline}</p>
+                        </td>
+                        <td className="py-3 px-3">
+                          <p className="text-sm text-foreground">{slot.origin}</p>
+                          <p className="text-xs text-muted-foreground">→ {slot.destination}</p>
+                        </td>
+                        <td className="py-3 px-3">
+                          <p className="text-sm text-foreground flex items-center gap-1"><Calendar size={11} className="text-muted-foreground" />{slot.date}</p>
+                          <p className="text-xs text-muted-foreground">{slot.time}</p>
+                        </td>
+                        <td className="py-3 px-3 text-xs text-muted-foreground max-w-[140px] truncate">{slot.aircraft}</td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-primary" style={{ width: `${fillPct}%` }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums">{slot.allocatedSeats}/{slot.totalSeats}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground tabular-nums">{slot.allocatedSeats}/{slot.totalSeats}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-xs text-muted-foreground">{slot.slotType}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium capitalize ${statusColors[slot.status]}`}>{slot.status}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="font-mono-data text-xs text-muted-foreground">{slot.permitNumber || '—'}</span>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="text-xs text-muted-foreground">{slot.slotType}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium capitalize ${statusColors[slot.status]}`}>{slot.status}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="font-mono-data text-xs text-muted-foreground">{slot.permitNumber || '—'}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          {isRejected && (
+                            <button
+                              onClick={() => { setResubmitSlot(slot); setResubmitNote(''); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#FEF2F2] text-[#DC2626] border border-[#DC2626]/20 hover:bg-[#DC2626] hover:text-white transition-all whitespace-nowrap"
+                            >
+                              <RefreshCw size={11} />
+                              Re-submit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {/* Rejection reason row */}
+                      {isRejected && slot.rejectionReason && (
+                        <tr className="border-b border-border/50 bg-[#FEF2F2]/20">
+                          <td colSpan={11} className="px-3 pb-3 pt-0">
+                            <div className="flex items-start gap-2 p-3 rounded-lg bg-[#FEF2F2] border border-[#DC2626]/20">
+                              <AlertTriangle size={14} className="text-[#DC2626] flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-semibold text-[#DC2626] mb-0.5">Rejection Reason</p>
+                                <p className="text-xs text-[#991B1B]">{slot.rejectionReason}</p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -285,6 +340,82 @@ export default function FlightSlotsPage() {
           )}
         </div>
       </div>
+
+      {/* Re-submit Approval Modal */}
+      {resubmitSlot && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl border border-border w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#FEF2F2] flex items-center justify-center">
+                  <RefreshCw size={16} className="text-[#DC2626]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">Re-submit Approval Request</h2>
+                  <p className="text-xs text-muted-foreground">{resubmitSlot.slotRef} — {resubmitSlot.flightNumber}</p>
+                </div>
+              </div>
+              <button onClick={() => setResubmitSlot(null)} className="p-2 rounded-lg hover:bg-muted text-muted-foreground"><X size={16} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Rejection reason display */}
+              {resubmitSlot.rejectionReason && (
+                <div className="flex items-start gap-2 p-4 rounded-xl bg-[#FEF2F2] border border-[#DC2626]/20">
+                  <AlertTriangle size={15} className="text-[#DC2626] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-[#DC2626] mb-1">Reason for Rejection</p>
+                    <p className="text-sm text-[#991B1B]">{resubmitSlot.rejectionReason}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Slot summary */}
+              <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Flight</p>
+                  <p className="text-sm font-semibold text-foreground">{resubmitSlot.flightNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Authority</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${authorityColors[resubmitSlot.authority]}`}>{resubmitSlot.authority}</span>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Route</p>
+                  <p className="text-sm text-foreground">{resubmitSlot.origin} → {resubmitSlot.destination}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-0.5">Date</p>
+                  <p className="text-sm text-foreground">{resubmitSlot.date} at {resubmitSlot.time}</p>
+                </div>
+              </div>
+
+              {/* Additional notes */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Additional Notes / Corrective Actions Taken</label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe the corrective actions taken to address the rejection reason..."
+                  value={resubmitNote}
+                  onChange={(e) => setResubmitNote(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-input text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground">Submitting this request will change the slot status back to <strong>Pending</strong> and notify the authority for re-review.</p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+              <button onClick={() => setResubmitSlot(null)} className="btn-secondary text-sm px-4 py-2">Cancel</button>
+              <button
+                onClick={handleResubmit}
+                className="flex items-center gap-2 btn-primary text-sm px-4 py-2"
+              >
+                <Send size={13} />
+                Submit New Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Slot Modal */}
       {showAddModal && (
