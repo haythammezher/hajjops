@@ -4,7 +4,7 @@ import CampaignHeader from './components/CampaignHeader';
 import MetricsBentoGrid from './components/MetricsBentoGrid';
 import DashboardCharts from './components/DashboardCharts';
 import AtRiskTable from './components/AtRiskTable';
-import ActivityFeed from './components/ActivityFeed';
+import LiveDashboardUpdates from './components/LiveDashboardUpdates';
 import GroupLeaderSummary from './components/GroupLeaderSummary';
 
 export default function CampaignDashboardPage() {
@@ -18,7 +18,7 @@ export default function CampaignDashboardPage() {
           <AtRiskTable />
         </div>
         <div className="xl:col-span-1">
-          <ActivityFeed />
+          <LiveDashboardUpdates />
         </div>
       </div>
       <div className="mt-6">

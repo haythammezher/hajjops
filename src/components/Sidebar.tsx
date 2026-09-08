@@ -26,8 +26,8 @@ const navItems: NavItem[] = [
   { label: 'Hotel Allocation', href: '/allocation-management', icon: Building2, group: 'Logistics' },
   { label: 'Bus Seating', href: '/allocation-management', icon: Bus, group: 'Logistics' },
   { label: 'Payments', href: '/payments', icon: CreditCard, badge: 61, group: 'Operations' },
-  { label: 'QR Check-in', href: '/campaign-dashboard', icon: QrCode, group: 'Operations' },
-  { label: 'Emergency Lists', href: '/campaign-dashboard', icon: AlertTriangle, badge: 4, group: 'Operations' },
+  { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
+  { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
   { label: 'Notifications', href: '/campaign-dashboard', icon: Bell, badge: 7, group: 'Operations' },
   { label: 'Settings', href: '/campaign-dashboard', icon: Settings, group: 'System' },
 ];
