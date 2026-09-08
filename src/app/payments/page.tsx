@@ -6,6 +6,7 @@ import PaymentTable from './components/PaymentTable';
 import TransactionHistory from './components/TransactionHistory';
 import RefundManagement from './components/RefundManagement';
 import FinancialReconciliation from './components/FinancialReconciliation';
+import PaymentCalculator from './components/PaymentCalculator';
 
 export default function PaymentsPage() {
   return (
@@ -13,6 +14,9 @@ export default function PaymentsPage() {
       <PaymentHeader />
       <div className="p-6 space-y-6">
         <PaymentMetrics />
+
+        {/* Payment Calculator */}
+        <PaymentCalculator />
 
         {/* Pilgrim Payment Status */}
         <PaymentTable />
