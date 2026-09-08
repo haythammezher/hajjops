@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getChatCompletion } from '../../../lib/ai/chatCompletion';
+import { completion } from '@rocketnew/llm-sdk';
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -10,66 +10,96 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let imageDataUrl: string | undefined;
+
   try {
-    const { imageDataUrl } = await req.json();
+    const body = await req.json();
+    imageDataUrl = body.imageDataUrl;
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
 
-    if (!imageDataUrl) {
-      return NextResponse.json({ error: 'No image provided' }, { status: 400 });
-    }
+  if (!imageDataUrl) {
+    return NextResponse.json({ error: 'No image provided' }, { status: 400 });
+  }
 
-    const response = await getChatCompletion(
-      'GEMINI',
-      'gemini/gemini-2.5-flash',
-      [
-        {
-          role: 'system',
-          content: `You are a passport MRZ (Machine Readable Zone) reader. When given a passport image, extract all data from it.
-Return ONLY a valid JSON object with these exact fields (no markdown, no explanation):
-{
-  "surname": "LAST_NAME_UPPERCASE",
-  "givenNames": "FIRST MIDDLE NAMES UPPERCASE",
-  "nationality": "3-letter country code e.g. LBN",
-  "passportNumber": "passport number",
-  "dateOfBirth": "DD MMM YYYY e.g. 15 JAN 1980",
-  "sex": "M or F",
-  "expiryDate": "DD MMM YYYY e.g. 20 DEC 2030",
-  "mrzLine1": "full MRZ line 1 (44 chars)",
-  "mrzLine2": "full MRZ line 2 (44 chars)"
-}
-If you cannot read the passport clearly, still return your best estimate with the available data. Never return null or empty strings — use placeholder values like "UNKNOWN" if truly unreadable.`,
-        },
+  try {
+    const response = await completion({
+      model: 'gemini/gemini-2.5-flash',
+      api_key: apiKey,
+      stream: false,
+      messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Extract all passport data from this image and return as JSON.',
+              text: `You are a passport OCR expert. Carefully examine this passport image and extract all visible data fields.
+
+Return ONLY a valid JSON object — no markdown, no explanation, no code fences. Use this exact structure:
+{
+  "surname": "LAST_NAME_IN_UPPERCASE",
+  "givenNames": "FIRST AND MIDDLE NAMES IN UPPERCASE",
+  "nationality": "3-letter ISO country code e.g. SAU",
+  "passportNumber": "passport number as printed",
+  "dateOfBirth": "DD MMM YYYY e.g. 15 JAN 1980",
+  "sex": "M or F",
+  "expiryDate": "DD MMM YYYY e.g. 20 DEC 2030",
+  "mrzLine1": "full MRZ line 1 exactly 44 characters",
+  "mrzLine2": "full MRZ line 2 exactly 44 characters"
+}
+
+Rules:
+- Use UPPERCASE for all name fields
+- If a field is not visible, use "UNKNOWN" as the value
+- Never return null or empty strings
+- Return ONLY the JSON object, nothing else`,
             },
             {
               type: 'image_url',
               image_url: { url: imageDataUrl },
             },
-          ] as any,
+          ],
         },
       ],
-      { temperature: 0.1, max_tokens: 512 }
-    );
+      temperature: 0.1,
+      max_tokens: 600,
+    } as any);
 
-    const raw = response.choices[0]?.message?.content ?? '';
+    const raw = (response as any)?.choices?.[0]?.message?.content ?? '';
 
-    // Strip markdown code fences if present
-    const jsonStr = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    if (!raw) {
+      return NextResponse.json({ error: 'Empty response from AI model' }, { status: 422 });
+    }
+
+    // Strip markdown code fences if model wraps the JSON
+    const jsonStr = raw
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/gi, '')
+      .trim();
 
     let parsed: Record<string, string>;
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      return NextResponse.json({ error: 'Failed to parse AI response', raw }, { status: 422 });
+      // Try to extract JSON object from the response
+      const match = jsonStr.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {
+          return NextResponse.json({ error: 'Failed to parse AI response as JSON', raw }, { status: 422 });
+        }
+      } else {
+        return NextResponse.json({ error: 'No JSON found in AI response', raw }, { status: 422 });
+      }
     }
 
     return NextResponse.json({ data: parsed });
   } catch (err: any) {
-    console.error('Passport scan API error:', err);
-    return NextResponse.json({ error: err?.message ?? 'Internal server error' }, { status: 500 });
+    console.error('Passport scan error:', err);
+    const message = err?.message ?? 'Internal server error';
+    const status = err?.statusCode ?? err?.status ?? 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
