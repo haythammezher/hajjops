@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 
 
@@ -33,10 +33,12 @@ const navItems: NavItem[] = [
   { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
   { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
   { label: 'Notifications', href: '/campaign-dashboard', icon: Bell, badge: 7, group: 'Operations' },
+  { label: 'Invoicing & Receipts', href: '/invoicing', icon: Receipt, group: 'Finance' },
+  { label: 'Revenue & Expenses', href: '/revenue-expenses', icon: TrendingUp, group: 'Finance' },
   { label: 'Settings', href: '/campaign-dashboard', icon: Settings, group: 'System' },
 ];
 
-const groups = ['Overview', 'Pilgrims', 'Logistics', 'Operations', 'System'];
+const groups = ['Overview', 'Pilgrims', 'Logistics', 'Operations', 'Finance', 'System'];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
