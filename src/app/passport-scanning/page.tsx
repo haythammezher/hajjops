@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { ScanLine, Download, CheckCircle2, AlertTriangle, Camera, FileSpreadsheet, Search, Clock, User, CreditCard, Upload, ImageIcon } from 'lucide-react';
+import { ScanLine, Download, CheckCircle2, AlertTriangle, Camera, FileSpreadsheet, Search, Clock, User, CreditCard, Upload, ImageIcon, XCircle } from 'lucide-react';
 
 interface ScannedPassport {
   id: string;
@@ -118,6 +118,7 @@ export default function PassportScanningPage() {
   const [scannedList, setScannedList] = useState<ScannedPassport[]>(mockScanned);
   const [selectedScan, setSelectedScan] = useState<ScannedPassport | null>(mockScanned[0]);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterMatch, setFilterMatch] = useState('all');
   const [scanResultIndex, setScanResultIndex] = useState(0);
@@ -140,9 +141,68 @@ export default function PassportScanningPage() {
     return matchSearch && matchFilter;
   });
 
-  const processScan = (imagePreview?: string) => {
+  /** Scan using real AI vision — called when user uploads/captures an image */
+  const processRealImage = async (imageDataUrl: string) => {
     setIsScanning(true);
-    setUploadedImage(imagePreview || null);
+    setScanError(null);
+    setUploadedImage(imageDataUrl);
+
+    try {
+      const res = await fetch('/api/passport-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataUrl }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || json.error) {
+        throw new Error(json.error ?? 'Failed to read passport image');
+      }
+
+      const d = json.data as {
+        surname: string;
+        givenNames: string;
+        nationality: string;
+        passportNumber: string;
+        dateOfBirth: string;
+        sex: string;
+        expiryDate: string;
+        mrzLine1: string;
+        mrzLine2: string;
+      };
+
+      const newScan: ScannedPassport = {
+        id: `SCN-${String(scannedList.length + 1).padStart(3, '0')}`,
+        scannedAt: new Date().toLocaleTimeString('en-US', { hour12: false }),
+        surname: d.surname ?? 'UNKNOWN',
+        givenNames: d.givenNames ?? 'UNKNOWN',
+        nationality: d.nationality ?? '---',
+        passportNumber: d.passportNumber ?? '---',
+        dateOfBirth: d.dateOfBirth ?? '---',
+        sex: d.sex ?? 'M',
+        expiryDate: d.expiryDate ?? '---',
+        mrzLine1: d.mrzLine1 ?? '',
+        mrzLine2: d.mrzLine2 ?? '',
+        matchStatus: 'new',
+        imagePreview: imageDataUrl,
+      };
+
+      setScannedList((prev) => [newScan, ...prev]);
+      setSelectedScan(newScan);
+    } catch (err: any) {
+      setScanError(err?.message ?? 'Could not read passport. Please try a clearer image.');
+    } finally {
+      setIsScanning(false);
+      setUploadedImage(null);
+    }
+  };
+
+  /** Simulate scan — cycles through mock data (demo only) */
+  const processMockScan = () => {
+    setIsScanning(true);
+    setScanError(null);
+    setUploadedImage(null);
     setTimeout(() => {
       const result = mockScanResults[scanResultIndex % mockScanResults.length];
       setScanResultIndex((prev) => prev + 1);
@@ -150,12 +210,10 @@ export default function PassportScanningPage() {
         ...result,
         id: `SCN-${String(scannedList.length + 1).padStart(3, '0')}`,
         scannedAt: new Date().toLocaleTimeString('en-US', { hour12: false }),
-        imagePreview,
       };
       setScannedList((prev) => [newScan, ...prev]);
       setSelectedScan(newScan);
       setIsScanning(false);
-      setUploadedImage(null);
     }, 2200);
   };
 
@@ -165,15 +223,10 @@ export default function PassportScanningPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      processScan(dataUrl);
+      processRealImage(dataUrl);
     };
     reader.readAsDataURL(file);
-    // Reset input so same file can be re-selected
     e.target.value = '';
-  };
-
-  const simulateScan = () => {
-    processScan(undefined);
   };
 
   const addToRegistry = (scan: ScannedPassport) => {
@@ -256,7 +309,7 @@ export default function PassportScanningPage() {
               Use Camera
             </button>
             <button
-              onClick={simulateScan}
+              onClick={processMockScan}
               disabled={isScanning}
               className="btn-primary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-70"
             >
@@ -292,8 +345,9 @@ export default function PassportScanningPage() {
               className={`relative rounded-xl border-2 overflow-hidden transition-all ${
                 isScanning
                   ? 'border-primary bg-secondary h-48'
-                  : uploadedImage
-                  ? 'border-primary h-48' :'border-dashed border-border bg-muted/30 h-44'
+                  : scanError
+                  ? 'border-[#DC2626] bg-[#FEF2F2] h-44'
+                  : 'border-dashed border-border bg-muted/30 h-44'
               }`}
             >
               {isScanning ? (
@@ -304,9 +358,20 @@ export default function PassportScanningPage() {
                     <ScanLine size={24} className="absolute inset-0 m-auto text-primary" />
                   </div>
                   <p className="text-sm font-medium text-primary">Reading MRZ data...</p>
-                  <p className="text-xs text-muted-foreground">Processing passport image</p>
-                  {/* Animated scan line */}
+                  <p className="text-xs text-muted-foreground">AI is analysing passport image</p>
                   <div className="absolute left-0 right-0 h-0.5 bg-primary/60 animate-bounce" style={{ top: '60%' }} />
+                </div>
+              ) : scanError ? (
+                <div className="h-full flex flex-col items-center justify-center gap-2 p-4">
+                  <XCircle size={28} className="text-[#DC2626]" />
+                  <p className="text-sm font-semibold text-[#DC2626] text-center">Scan Failed</p>
+                  <p className="text-xs text-[#DC2626]/80 text-center">{scanError}</p>
+                  <button
+                    onClick={() => setScanError(null)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-[#DC2626]/30 text-[#DC2626] font-medium mt-1"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center gap-2 p-4">
