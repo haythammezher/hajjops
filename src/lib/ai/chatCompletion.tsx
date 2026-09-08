@@ -1,5 +1,3 @@
-export function getChatCompletion(...args) {
-  // eslint-disable-next-line no-console
-  console.warn('Placeholder: getChatCompletion is not implemented yet.', args);
-  return null;
-}
+// This file is superseded by chatCompletion.ts which contains the full implementation.
+// Re-exporting for backwards compatibility with any .tsx imports.
+export { getChatCompletion, getStreamingChatCompletion } from './chatCompletion';

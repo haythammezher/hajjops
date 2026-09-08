@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getChatCompletion } from '../../../lib/ai/chatCompletion';
 
 export async function POST(req: NextRequest) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'GEMINI_API_KEY is not configured. Please set the environment variable.' },
+      { status: 400 }
+    );
+  }
+
   try {
     const { imageDataUrl } = await req.json();
 
