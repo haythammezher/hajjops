@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-
-
-import { ScanLine, Download, CheckCircle2, AlertTriangle, Camera, FileSpreadsheet, Search, Clock, User, CreditCard } from 'lucide-react';
+import { ScanLine, Download, CheckCircle2, AlertTriangle, Camera, FileSpreadsheet, Search, Clock, User, CreditCard, Upload, ImageIcon } from 'lucide-react';
 
 interface ScannedPassport {
   id: string;
@@ -21,7 +19,53 @@ interface ScannedPassport {
   mrzLine2: string;
   matchStatus: 'matched' | 'new' | 'mismatch';
   matchedPilgrimName?: string;
+  imagePreview?: string;
 }
+
+const mockScanResults: Omit<ScannedPassport, 'id' | 'scannedAt' | 'imagePreview'>[] = [
+  {
+    surname: 'AL-TUNISI', givenNames: 'IBRAHIM HASSAN', nationality: 'TUN',
+    passportNumber: 'TN8834521', dateOfBirth: '05 JAN 1973', sex: 'M', expiryDate: '14 AUG 2030',
+    mrzLine1: 'P<TUNAL-TUNISI<<IBRAHIM<HASSAN<<<<<<<<<<<<<<<',
+    mrzLine2: 'TN88345215TUN7301051M3008144<<<<<<<<<<<<<<02',
+    matchStatus: 'matched', matchedPilgrimName: 'Ibrahim Hassan Al-Tunisi', pilgrimId: 'PIL-009',
+  },
+  {
+    surname: 'KHALIL', givenNames: 'MARIAM NOUR', nationality: 'LBN',
+    passportNumber: 'LB9912345', dateOfBirth: '22 SEP 1985', sex: 'F', expiryDate: '30 OCT 2031',
+    mrzLine1: 'P<LBNKHALIL<<MARIAM<NOUR<<<<<<<<<<<<<<<<<<<<<',
+    mrzLine2: 'LB99123456LBN8509221F3110304<<<<<<<<<<<<<<07',
+    matchStatus: 'new',
+  },
+  {
+    surname: 'AL-ZAHRANI', givenNames: 'OMAR FAISAL', nationality: 'SAU',
+    passportNumber: 'SA6612987', dateOfBirth: '14 FEB 1968', sex: 'M', expiryDate: '05 MAY 2029',
+    mrzLine1: 'P<SAUOMAR<<FAISAL<AL-ZAHRANI<<<<<<<<<<<<<<<<<',
+    mrzLine2: 'SA66129875SAU6802141M2905054<<<<<<<<<<<<<<03',
+    matchStatus: 'matched', matchedPilgrimName: 'Omar Faisal Al-Zahrani', pilgrimId: 'PIL-014',
+  },
+  {
+    surname: 'BOUAZZA', givenNames: 'YOUSSEF AMINE', nationality: 'MAR',
+    passportNumber: 'MA7723456', dateOfBirth: '30 JUL 1980', sex: 'M', expiryDate: '18 DEC 2028',
+    mrzLine1: 'P<MARBOUAZZA<<YOUSSEF<AMINE<<<<<<<<<<<<<<<<<',
+    mrzLine2: 'MA77234565MAR8007301M2812184<<<<<<<<<<<<<<05',
+    matchStatus: 'mismatch', matchedPilgrimName: 'Youssef Bouazza',
+  },
+  {
+    surname: 'AL-DOSARI', givenNames: 'SARA ABDULAZIZ', nationality: 'QAT',
+    passportNumber: 'QA5534871', dateOfBirth: '11 APR 1990', sex: 'F', expiryDate: '22 MAR 2032',
+    mrzLine1: 'P<QATAL-DOSARI<<SARA<ABDULAZIZ<<<<<<<<<<<<<<<',
+    mrzLine2: 'QA55348715QAT9004111F3203224<<<<<<<<<<<<<<09',
+    matchStatus: 'new',
+  },
+  {
+    surname: 'HASSAN', givenNames: 'AMIRA MAHMOUD', nationality: 'EGY',
+    passportNumber: 'EG3345678', dateOfBirth: '07 DEC 1977', sex: 'F', expiryDate: '01 JUN 2030',
+    mrzLine1: 'P<EGYHASSAN<<AMIRA<MAHMOUD<<<<<<<<<<<<<<<<<<',
+    mrzLine2: 'EG33456785EGY7712071F3006014<<<<<<<<<<<<<<06',
+    matchStatus: 'matched', matchedPilgrimName: 'Amira Mahmoud Hassan', pilgrimId: 'PIL-022',
+  },
+];
 
 const mockScanned: ScannedPassport[] = [
   {
@@ -76,6 +120,11 @@ export default function PassportScanningPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [search, setSearch] = useState('');
   const [filterMatch, setFilterMatch] = useState('all');
+  const [scanResultIndex, setScanResultIndex] = useState(0);
+  const [registryAdded, setRegistryAdded] = useState<Set<string>>(new Set());
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const stats = {
     total: scannedList.length,
@@ -91,22 +140,57 @@ export default function PassportScanningPage() {
     return matchSearch && matchFilter;
   });
 
-  const simulateScan = () => {
+  const processScan = (imagePreview?: string) => {
     setIsScanning(true);
+    setUploadedImage(imagePreview || null);
     setTimeout(() => {
+      const result = mockScanResults[scanResultIndex % mockScanResults.length];
+      setScanResultIndex((prev) => prev + 1);
       const newScan: ScannedPassport = {
+        ...result,
         id: `SCN-${String(scannedList.length + 1).padStart(3, '0')}`,
         scannedAt: new Date().toLocaleTimeString('en-US', { hour12: false }),
-        surname: 'AL-TUNISI', givenNames: 'IBRAHIM', nationality: 'TUN',
-        passportNumber: 'TN8834521', dateOfBirth: '05 JAN 1973', sex: 'M', expiryDate: '14 AUG 2030',
-        mrzLine1: 'P<TUNAL-TUNISI<<IBRAHIM<<<<<<<<<<<<<<<<<<<<<<<',
-        mrzLine2: 'TN88345215TUN7301051M3008144<<<<<<<<<<<<<<02',
-        matchStatus: 'matched', matchedPilgrimName: 'Ibrahim Al-Tunisi', pilgrimId: 'PIL-009',
+        imagePreview,
       };
       setScannedList((prev) => [newScan, ...prev]);
       setSelectedScan(newScan);
       setIsScanning(false);
-    }, 2500);
+      setUploadedImage(null);
+    }, 2200);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      processScan(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
+
+  const simulateScan = () => {
+    processScan(undefined);
+  };
+
+  const addToRegistry = (scan: ScannedPassport) => {
+    const newId = `PIL-${String(100 + scannedList.length).padStart(3, '0')}`;
+    setScannedList((prev) =>
+      prev.map((s) =>
+        s.id === scan.id
+          ? { ...s, matchStatus: 'matched', matchedPilgrimName: `${scan.givenNames} ${scan.surname}`, pilgrimId: newId }
+          : s
+      )
+    );
+    setSelectedScan((prev) =>
+      prev?.id === scan.id
+        ? { ...prev, matchStatus: 'matched', matchedPilgrimName: `${scan.givenNames} ${scan.surname}`, pilgrimId: newId }
+        : prev
+    );
+    setRegistryAdded((prev) => new Set(prev).add(scan.id));
   };
 
   const exportToExcel = () => {
@@ -134,17 +218,52 @@ export default function PassportScanningPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">Scan passports, read MRZ data, match to registry — export to Excel</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button onClick={exportToExcel} className="btn-secondary text-sm px-4 py-2 flex items-center gap-2">
               <FileSpreadsheet size={14} />
               Export to Excel
             </button>
-            <button onClick={simulateScan} disabled={isScanning}
-              className="btn-primary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-70">
+            {/* Hidden file inputs */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isScanning}
+              className="btn-secondary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-70"
+            >
+              <Upload size={14} />
+              Upload Image
+            </button>
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={isScanning}
+              className="btn-secondary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-70"
+            >
+              <Camera size={14} />
+              Use Camera
+            </button>
+            <button
+              onClick={simulateScan}
+              disabled={isScanning}
+              className="btn-primary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-70"
+            >
               {isScanning ? (
                 <><span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />Scanning...</>
               ) : (
-                <><Camera size={14} />Scan Passport</>
+                <><ScanLine size={14} />Simulate Scan</>
               )}
             </button>
           </div>
@@ -169,22 +288,47 @@ export default function PassportScanningPage() {
           {/* Scan List */}
           <div className="lg:col-span-2 space-y-3">
             {/* Scanner Viewport */}
-            <div className={`relative rounded-xl border-2 overflow-hidden h-40 flex items-center justify-center transition-all ${isScanning ? 'border-primary bg-secondary' : 'border-dashed border-border bg-muted/30'}`}>
+            <div
+              className={`relative rounded-xl border-2 overflow-hidden transition-all ${
+                isScanning
+                  ? 'border-primary bg-secondary h-48'
+                  : uploadedImage
+                  ? 'border-primary h-48' :'border-dashed border-border bg-muted/30 h-44'
+              }`}
+            >
               {isScanning ? (
-                <div className="text-center">
+                <div className="h-full flex flex-col items-center justify-center">
                   <div className="relative w-16 h-16 mx-auto mb-2">
                     <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
                     <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
                     <ScanLine size={24} className="absolute inset-0 m-auto text-primary" />
                   </div>
                   <p className="text-sm font-medium text-primary">Reading MRZ data...</p>
-                  <p className="text-xs text-muted-foreground">Hold passport steady</p>
+                  <p className="text-xs text-muted-foreground">Processing passport image</p>
+                  {/* Animated scan line */}
+                  <div className="absolute left-0 right-0 h-0.5 bg-primary/60 animate-bounce" style={{ top: '60%' }} />
                 </div>
               ) : (
-                <div className="text-center">
-                  <Camera size={28} className="text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm font-medium text-foreground">Scanner Ready</p>
-                  <p className="text-xs text-muted-foreground">Click "Scan Passport" to begin</p>
+                <div className="h-full flex flex-col items-center justify-center gap-2 p-4">
+                  <Camera size={28} className="text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground text-center">Scanner Ready</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Use <strong>Camera</strong> to capture, <strong>Upload Image</strong> to select a file, or <strong>Simulate Scan</strong> for demo
+                  </p>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium flex items-center gap-1"
+                    >
+                      <Camera size={11} /> Camera
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-border bg-card text-foreground font-medium flex items-center gap-1"
+                    >
+                      <ImageIcon size={11} /> Upload
+                    </button>
+                  </div>
                 </div>
               )}
               {/* Corner brackets */}
@@ -212,22 +356,26 @@ export default function PassportScanningPage() {
 
             {/* Scan List */}
             <div className="space-y-2 max-h-[420px] overflow-y-auto scrollbar-thin">
-              {filtered.map((scan) => (
-                <button key={scan.id} onClick={() => setSelectedScan(scan)}
-                  className={`w-full text-left p-3 rounded-xl border transition-all ${selectedScan?.id === scan.id ? 'border-primary bg-secondary' : 'border-border bg-card hover:bg-muted'}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{scan.givenNames} {scan.surname}</p>
-                      <p className="font-mono-data text-xs text-muted-foreground">{scan.passportNumber} · {scan.nationality}</p>
+              {filtered.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">No scans found</div>
+              ) : (
+                filtered.map((scan) => (
+                  <button key={scan.id} onClick={() => setSelectedScan(scan)}
+                    className={`w-full text-left p-3 rounded-xl border transition-all ${selectedScan?.id === scan.id ? 'border-primary bg-secondary' : 'border-border bg-card hover:bg-muted'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{scan.givenNames} {scan.surname}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{scan.passportNumber} · {scan.nationality}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium flex-shrink-0 ${matchColors[scan.matchStatus]}`}>{matchLabels[scan.matchStatus]}</span>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium flex-shrink-0 ${matchColors[scan.matchStatus]}`}>{matchLabels[scan.matchStatus]}</span>
-                  </div>
-                  <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-                    <Clock size={10} />
-                    <span>Today {scan.scannedAt}</span>
-                  </div>
-                </button>
-              ))}
+                    <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                      <Clock size={10} />
+                      <span>Today {scan.scannedAt}</span>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
@@ -243,6 +391,18 @@ export default function PassportScanningPage() {
                   <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${matchColors[selectedScan.matchStatus]}`}>{matchLabels[selectedScan.matchStatus]}</span>
                 </div>
 
+                {/* Uploaded image preview */}
+                {selectedScan.imagePreview && (
+                  <div className="relative rounded-xl overflow-hidden border border-border h-32">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={selectedScan.imagePreview} alt="Scanned passport" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute bottom-2 left-3 flex items-center gap-1 text-white text-xs font-medium">
+                      <CheckCircle2 size={12} /> MRZ extracted from image
+                    </div>
+                  </div>
+                )}
+
                 {/* Passport Data Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -257,7 +417,7 @@ export default function PassportScanningPage() {
                   ].map((field) => (
                     <div key={field.label} className="p-3 rounded-lg bg-muted/50 border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
-                      <p className={`text-sm font-semibold text-foreground ${field.mono ? 'font-mono-data' : ''}`}>{field.value}</p>
+                      <p className={`text-sm font-semibold text-foreground ${field.mono ? 'font-mono' : ''}`}>{field.value}</p>
                     </div>
                   ))}
                 </div>
@@ -284,9 +444,24 @@ export default function PassportScanningPage() {
                     <User size={18} className="text-[#2563EB] flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-[#2563EB]">New pilgrim — not in registry</p>
-                      <p className="text-xs text-[#2563EB]/80">Add to registry to complete registration</p>
+                      <p className="text-xs text-[#2563EB]/80">
+                        {registryAdded.has(selectedScan.id)
+                          ? 'Successfully added to registry' :'Add to registry to complete registration'}
+                      </p>
                     </div>
-                    <button className="btn-primary text-xs px-3 py-1.5 flex-shrink-0">Add to Registry</button>
+                    {!registryAdded.has(selectedScan.id) && (
+                      <button
+                        onClick={() => addToRegistry(selectedScan)}
+                        className="btn-primary text-xs px-3 py-1.5 flex-shrink-0"
+                      >
+                        Add to Registry
+                      </button>
+                    )}
+                    {registryAdded.has(selectedScan.id) && (
+                      <span className="flex items-center gap-1 text-xs text-[#16A34A] font-medium flex-shrink-0">
+                        <CheckCircle2 size={13} /> Added
+                      </span>
+                    )}
                   </div>
                 )}
                 {selectedScan.matchStatus === 'mismatch' && (
