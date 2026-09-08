@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 
 
@@ -20,11 +20,15 @@ const navItems: NavItem[] = [
   { label: 'Campaign Dashboard', href: '/', icon: LayoutDashboard, group: 'Overview' },
   { label: 'Pilgrim Management', href: '/pilgrim-management', icon: Users, badge: 23, group: 'Pilgrims' },
   { label: 'Pilgrim Profile', href: '/pilgrim-profile', icon: ClipboardList, group: 'Pilgrims' },
+  { label: 'Pilgrim Registry', href: '/pilgrim-registry', icon: FileSpreadsheet, group: 'Pilgrims' },
   { label: 'Group Leaders', href: '/group-leader-dashboard', icon: UserCheck, group: 'Pilgrims' },
+  { label: 'Passport Scanning', href: '/passport-scanning', icon: ScanLine, group: 'Pilgrims' },
   { label: 'Allocation Management', href: '/allocation-management', icon: Layers, group: 'Logistics' },
   { label: 'Flight Manifests', href: '/allocation-management', icon: Plane, group: 'Logistics' },
+  { label: 'Flight Slots', href: '/flight-slots', icon: Globe, group: 'Logistics' },
   { label: 'Hotel Allocation', href: '/allocation-management', icon: Building2, group: 'Logistics' },
   { label: 'Bus Seating', href: '/allocation-management', icon: Bus, group: 'Logistics' },
+  { label: 'Auto Distributor', href: '/auto-distributor', icon: Shuffle, group: 'Logistics' },
   { label: 'Payments', href: '/payments', icon: CreditCard, badge: 61, group: 'Operations' },
   { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
   { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
