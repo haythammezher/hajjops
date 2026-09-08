@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const response = await completion({
-      model: 'gemini/gemini-2.5-flash',
+      model: 'gemini/gemini-3.6-flash',
       api_key: apiKey,
       stream: false,
       messages: [
