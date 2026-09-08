@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp, BarChart3 } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 import { useCurrency, CURRENCIES } from '@/lib/currency';
 
@@ -33,10 +33,11 @@ const navItems: NavItem[] = [
   { label: 'Payments', href: '/payments', icon: CreditCard, badge: 61, group: 'Operations' },
   { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
   { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
-  { label: 'Notifications', href: '/campaign-dashboard', icon: Bell, badge: 7, group: 'Operations' },
+  { label: 'Notifications', href: '/notifications', icon: Bell, badge: 7, group: 'Operations' },
   { label: 'Invoicing & Receipts', href: '/invoicing', icon: Receipt, group: 'Finance' },
   { label: 'Revenue & Expenses', href: '/revenue-expenses', icon: TrendingUp, group: 'Finance' },
-  { label: 'Settings', href: '/campaign-dashboard', icon: Settings, group: 'System' },
+  { label: 'Reports & Export', href: '/reports', icon: BarChart3, group: 'Finance' },
+  { label: 'Settings', href: '/settings', icon: Settings, group: 'System' },
 ];
 
 const groups = ['Overview', 'Pilgrims', 'Logistics', 'Operations', 'Finance', 'System'];
