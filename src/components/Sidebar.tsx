@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp, BarChart3, ListChecks } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
+import { useCurrency, CURRENCIES } from '@/lib/currency';
 
 
 interface NavItem {
@@ -20,23 +21,32 @@ const navItems: NavItem[] = [
   { label: 'Campaign Dashboard', href: '/', icon: LayoutDashboard, group: 'Overview' },
   { label: 'Pilgrim Management', href: '/pilgrim-management', icon: Users, badge: 23, group: 'Pilgrims' },
   { label: 'Pilgrim Profile', href: '/pilgrim-profile', icon: ClipboardList, group: 'Pilgrims' },
+  { label: 'Pilgrim Registry', href: '/pilgrim-registry', icon: FileSpreadsheet, group: 'Pilgrims' },
   { label: 'Group Leaders', href: '/group-leader-dashboard', icon: UserCheck, group: 'Pilgrims' },
+  { label: 'Passport Scanning', href: '/passport-scanning', icon: ScanLine, group: 'Pilgrims' },
   { label: 'Allocation Management', href: '/allocation-management', icon: Layers, group: 'Logistics' },
   { label: 'Flight Manifests', href: '/allocation-management', icon: Plane, group: 'Logistics' },
+  { label: 'Flight Slots', href: '/flight-slots', icon: Globe, group: 'Logistics' },
   { label: 'Hotel Allocation', href: '/allocation-management', icon: Building2, group: 'Logistics' },
   { label: 'Bus Seating', href: '/allocation-management', icon: Bus, group: 'Logistics' },
+  { label: 'Auto Distributor', href: '/auto-distributor', icon: Shuffle, group: 'Logistics' },
   { label: 'Payments', href: '/payments', icon: CreditCard, badge: 61, group: 'Operations' },
-  { label: 'QR Check-in', href: '/campaign-dashboard', icon: QrCode, group: 'Operations' },
-  { label: 'Emergency Lists', href: '/campaign-dashboard', icon: AlertTriangle, badge: 4, group: 'Operations' },
-  { label: 'Notifications', href: '/campaign-dashboard', icon: Bell, badge: 7, group: 'Operations' },
-  { label: 'Settings', href: '/campaign-dashboard', icon: Settings, group: 'System' },
+  { label: 'Approval Queue', href: '/approval-queue', icon: ListChecks, badge: 8, group: 'Operations' },
+  { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
+  { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
+  { label: 'Notifications', href: '/notifications', icon: Bell, badge: 7, group: 'Operations' },
+  { label: 'Invoicing & Receipts', href: '/invoicing', icon: Receipt, group: 'Finance' },
+  { label: 'Revenue & Expenses', href: '/revenue-expenses', icon: TrendingUp, group: 'Finance' },
+  { label: 'Reports & Export', href: '/reports', icon: BarChart3, group: 'Finance' },
+  { label: 'Settings', href: '/settings', icon: Settings, group: 'System' },
 ];
 
-const groups = ['Overview', 'Pilgrims', 'Logistics', 'Operations', 'System'];
+const groups = ['Overview', 'Pilgrims', 'Logistics', 'Operations', 'Finance', 'System'];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { currency, setCurrency } = useCurrency();
 
   return (
     <aside
@@ -118,6 +128,33 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Currency Selector */}
+      {!collapsed ? (
+        <div className="border-t border-border px-3 py-2">
+          <p className="text-xs text-muted-foreground font-medium mb-1.5">Display Currency</p>
+          <select
+            value={currency.code}
+            onChange={(e) => {
+              const found = CURRENCIES.find((c) => c.code === e.target.value);
+              if (found) setCurrency(found);
+            }}
+            className="w-full px-2 py-1.5 text-xs bg-muted border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.symbol} {c.code} — {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className="border-t border-border px-2 py-2 flex justify-center">
+          <span className="text-xs font-semibold text-muted-foreground" title={`Currency: ${currency.code}`}>
+            {currency.symbol.length <= 3 ? currency.symbol : currency.code.slice(0, 2)}
+          </span>
+        </div>
+      )}
 
       {/* User */}
       <div className={`border-t border-border p-3 flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
