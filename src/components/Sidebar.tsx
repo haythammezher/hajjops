@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ChevronLeft, ChevronRight, Plane, Building2, Bus, QrCode, Bell, Settings, LogOut, AlertTriangle, ClipboardList, Layers, CreditCard, FileSpreadsheet, ScanLine, Shuffle, Globe, Receipt, TrendingUp, BarChart3, ListChecks } from 'lucide-react';
 import Icon from '@/components/ui/AppIcon';
 import { useCurrency, CURRENCIES } from '@/lib/currency';
 
@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Bus Seating', href: '/allocation-management', icon: Bus, group: 'Logistics' },
   { label: 'Auto Distributor', href: '/auto-distributor', icon: Shuffle, group: 'Logistics' },
   { label: 'Payments', href: '/payments', icon: CreditCard, badge: 61, group: 'Operations' },
+  { label: 'Approval Queue', href: '/approval-queue', icon: ListChecks, badge: 8, group: 'Operations' },
   { label: 'QR Check-in', href: '/qr-checkin', icon: QrCode, group: 'Operations' },
   { label: 'Emergency Mgmt', href: '/emergency-management', icon: AlertTriangle, badge: 2, group: 'Operations' },
   { label: 'Notifications', href: '/notifications', icon: Bell, badge: 7, group: 'Operations' },
